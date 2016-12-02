@@ -7,8 +7,6 @@ import scrapy
 
 from weixin.items import *
 
-print dir()
-
 class WeixinSpider(scrapy.Spider):
   name = 'weixin'
 
