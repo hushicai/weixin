@@ -34,6 +34,8 @@ CREATE TABLE `tb_weixin_account` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '自增id',
   `weixin_id` varchar(45) NOT NULL COMMENT '微信号',
   `weixin_name` varchar(64) NOT NULL COMMENT '微信名称',
+  `insert_time` timestamp NULL DEFAULT NULL,
+  `update_time` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`),
   UNIQUE KEY `name_UNIQUE` (`weixin_name`),
@@ -96,4 +98,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2016-12-06 16:31:39
+-- Dump completed on 2016-12-06 16:37:24

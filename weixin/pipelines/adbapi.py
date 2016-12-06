@@ -107,10 +107,14 @@ class MySQLStorePipeline(object):
 
   def _insert_account(self, transaction, item):
     """插入新的微信账号"""
-    sql = """insert into db_weixin.tb_weixin_account(weixin_id,weixin_name)
-    values(%s,%s)
+    sql = """insert into db_weixin.tb_weixin_account(weixin_id,weixin_name,insert_time)
+    values(%s,%s,%s)
     """
-    transaction.execute(sql, (item['weixin_id'], item['weixin_name']))
+    nowTime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+    transaction.execute(
+      sql,
+      (item['weixin_id'], item['weixin_name'],nowTime)
+    )
     account_id = transaction.connection.insert_id()
     return account_id
 
