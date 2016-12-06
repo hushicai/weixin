@@ -14,7 +14,15 @@ class WeixinSpider(scrapy.Spider):
 
   download_delay = 2
 
-  start_urls = ['http://weixin.sogou.com/weixin?type=2&query=javascript']
+  query = 'JavaScript'
+
+  def start_requests(self):
+    start_urls = [
+      'http://weixin.sogou.com/weixin?type=2&query=' + self.query
+    ]
+
+    for url in start_urls:
+      yield scrapy.Request(url = url, callback = self.parse)
 
   def parse(self, response):
     """
@@ -52,13 +60,13 @@ class WeixinSpider(scrapy.Spider):
             meta = meta
           )
 
-    #  next_page = response\
-      #  .xpath('//div[@id="pagebar_container"]/a[@id="sogou_next"]/@href')\
-      #  .extract_first()
+    next_page = response\
+      .xpath('//div[@id="pagebar_container"]/a[@id="sogou_next"]/@href')\
+      .extract_first()
 
-    #  if next_page is not None:
-      #  next_page_url = response.urljoin(next_page)
-      #  yield scrapy.Request(next_page_url, callback = self.parse)
+    if next_page is not None:
+      next_page_url = response.urljoin(next_page)
+      yield scrapy.Request(next_page_url, callback = self.parse)
 
   def parse_detail(self, response):
     """parse文章详情"""
@@ -74,11 +82,12 @@ class WeixinSpider(scrapy.Spider):
     article_item['author'] = response.xpath('//*[@id="img-content"]/div[1]/em[2]/text()').extract_first()
     article_item['content'] = "".join(response.xpath('//*[@id="js_content"]/node()').extract()).strip()
     article_item['publish_time'] = response.xpath('//*[@id="img-content"]/div[1]/em[1]/text()').extract_first()
-    article_item['query'] = 'JavaScript'
-    article_item['source'] = 'weixin'
+    article_item['query'] = self.query
+    article_item['source'] = self.name
 
     yield article_item
 
   def remove_highlight_tag(self, value):
+    """删除高亮标签"""
     pattern = r'<em><!--red_beg-->([^<>]*?)<!--red_end--><\/em>'
     return re.sub(pattern, '\g<1>', value)
