@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 from urllib import urlencode
 # relative import只能用在toplevel空间中
 from weixin.items import *
+from hashlib import md5
 
 class WeixinSpider(scrapy.Spider):
   name = 'weixin'
@@ -25,14 +26,22 @@ class WeixinSpider(scrapy.Spider):
       #  搜狗时效性链接
       article_temp_link = item.xpath('.//h3/a/@href').extract_first()
       #  账号名
-      account_name = item.xpath('.//div[@class="s-p"]/a/text()').extract_first()
-      #  账号临时链接
-      #  account_temp_link = item.xpath('.//div[@class="s-p"]/a/@href').extract_first()
+      weixin_name = item.xpath('.//div[@class="s-p"]/a/text()').extract_first()
+      weixin_id = item.xpath('.//div[@class="s-p"]/a/@data-username').extract_first()
+
+      raw_title = re.sub('<[^>]*>', '', title).encode('utf-8')
+
+      fd = md5()
+      fd.update(weixin_id + ', ')
+      fd.update(raw_title)
+      uid = fd.hexdigest()
 
       meta = {
         'article_title': title,
         'article_abstract': abstract,
-        'article_account_name': account_name
+        'article_weixin_name': weixin_name,
+        'article_weixin_id': weixin_id,
+        'article_uid': uid
       }
 
       if article_temp_link is not None:
@@ -42,13 +51,13 @@ class WeixinSpider(scrapy.Spider):
             meta = meta
           )
 
-    next_page = response\
-      .xpath('//div[@id="pagebar_container"]/a[@id="sogou_next"]/@href')\
-      .extract_first()
+    #  next_page = response\
+      #  .xpath('//div[@id="pagebar_container"]/a[@id="sogou_next"]/@href')\
+      #  .extract_first()
 
-    if next_page is not None:
-      next_page_url = response.urljoin(next_page)
-      yield scrapy.Request(next_page_url, callback = self.parse)
+    #  if next_page is not None:
+      #  next_page_url = response.urljoin(next_page)
+      #  yield scrapy.Request(next_page_url, callback = self.parse)
 
   def parse_detail(self, response):
     """parse文章详情"""
@@ -56,11 +65,19 @@ class WeixinSpider(scrapy.Spider):
 
     article_item = article.Item()
 
-    article_item['account_name'] = meta['article_account_name']
-    article_item['title'] = meta['article_title']
-    article_item['abstract'] = meta['article_abstract']
+    article_item['weixin_name'] = meta['article_weixin_name']
+    article_item['weixin_id'] = meta['article_weixin_id']
+    article_item['title'] = self.remove_highlight_tag(meta['article_title'])
+    article_item['uid'] = meta['article_uid']
+    article_item['abstract'] =self.remove_highlight_tag(meta['article_abstract'])
     article_item['author'] = response.xpath('//*[@id="img-content"]/div[1]/em[2]/text()').extract_first()
-    article_item['content'] = "".join(response.xpath('//*[@id="js_content"]/node()').extract())
+    article_item['content'] = "".join(response.xpath('//*[@id="js_content"]/node()').extract()).strip()
     article_item['publish_time'] = response.xpath('//*[@id="img-content"]/div[1]/em[1]/text()').extract_first()
+    article_item['query'] = 'JavaScript'
+    article_item['source'] = 'weixin'
 
     yield article_item
+
+  def remove_highlight_tag(self, value):
+    pattern = r'<em><!--red_beg-->([^<>]*?)<!--red_end--><\/em>'
+    return re.sub(pattern, '\g<1>', value)

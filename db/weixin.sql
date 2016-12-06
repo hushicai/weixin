@@ -38,7 +38,7 @@ CREATE TABLE `tb_weixin_account` (
   UNIQUE KEY `id_UNIQUE` (`id`),
   UNIQUE KEY `name_UNIQUE` (`weixin_name`),
   UNIQUE KEY `account_UNIQUE` (`weixin_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -59,17 +59,22 @@ DROP TABLE IF EXISTS `tb_weixin_article`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `tb_weixin_article` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `uid` varchar(64) NOT NULL,
   `account_id` int(11) NOT NULL,
   `title` tinytext NOT NULL,
-  `abstract` tinytext,
-  `content` text,
+  `abstract` text,
+  `content` longtext,
   `author` varchar(64) DEFAULT NULL,
   `publish_time` date DEFAULT NULL,
-  `sogou_query` varchar(64) DEFAULT NULL,
+  `query` varchar(64) DEFAULT NULL COMMENT '搜索条件',
+  `source` varchar(32) DEFAULT NULL COMMENT '来源',
+  `insert_time` timestamp NULL DEFAULT NULL,
+  `update_time` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`),
-  UNIQUE KEY `account_id_UNIQUE` (`account_id`),
-  CONSTRAINT `article_account_fk` FOREIGN KEY (`account_id`) REFERENCES `tb_weixin_account` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
+  UNIQUE KEY `uid_UNIQUE` (`uid`),
+  KEY `account_id_fk_idx` (`account_id`),
+  CONSTRAINT `account_id_fk` FOREIGN KEY (`account_id`) REFERENCES `tb_weixin_account` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -91,4 +96,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2016-12-02 18:39:35
+-- Dump completed on 2016-12-06 16:31:39

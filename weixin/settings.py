@@ -65,9 +65,9 @@ DOWNLOADER_MIDDLEWARES = {
 
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    'weixin.pipelines.SomePipeline': 300,
-#}
+ITEM_PIPELINES = {
+  'weixin.pipelines.adbapi.MySQLStorePipeline': 300,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See http://doc.scrapy.org/en/latest/topics/autothrottle.html
@@ -89,3 +89,11 @@ DOWNLOADER_MIDDLEWARES = {
 #HTTPCACHE_DIR = 'httpcache'
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
+
+LOG_LEVEL = 'INFO'
+
+# MySQL database configure setting
+MYSQL_HOST = 'localhost'
+MYSQL_DBNAME = 'db_weixin'
+MYSQL_USER = 'root'
+MYSQL_PASSWD = '515224'
