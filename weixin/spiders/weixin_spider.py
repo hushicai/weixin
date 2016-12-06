@@ -29,11 +29,12 @@ class WeixinSpider(scrapy.Spider):
       weixin_name = item.xpath('.//div[@class="s-p"]/a/text()').extract_first()
       weixin_id = item.xpath('.//div[@class="s-p"]/a/@data-username').extract_first()
 
-      raw_title = re.sub('<[^>]*>', '', title).encode('utf-8')
+      title = self.remove_highlight_tag(title)
+      abstract = self.remove_highlight_tag(abstract)
 
       fd = md5()
       fd.update(weixin_id + ', ')
-      fd.update(raw_title)
+      fd.update(title)
       uid = fd.hexdigest()
 
       meta = {
@@ -67,9 +68,9 @@ class WeixinSpider(scrapy.Spider):
 
     article_item['weixin_name'] = meta['article_weixin_name']
     article_item['weixin_id'] = meta['article_weixin_id']
-    article_item['title'] = self.remove_highlight_tag(meta['article_title'])
+    article_item['title'] = meta['article_title']
     article_item['uid'] = meta['article_uid']
-    article_item['abstract'] =self.remove_highlight_tag(meta['article_abstract'])
+    article_item['abstract'] = meta['article_abstract']
     article_item['author'] = response.xpath('//*[@id="img-content"]/div[1]/em[2]/text()').extract_first()
     article_item['content'] = "".join(response.xpath('//*[@id="js_content"]/node()').extract()).strip()
     article_item['publish_time'] = response.xpath('//*[@id="img-content"]/div[1]/em[1]/text()').extract_first()
