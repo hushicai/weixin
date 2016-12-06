@@ -66,7 +66,7 @@ DOWNLOADER_MIDDLEWARES = {
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-  'weixin.pipelines.adbapi.MySQLStorePipeline': 300,
+  'weixin.pipelines.adbapi.WeixinArticlePipeline': 300,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

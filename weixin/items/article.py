@@ -15,6 +15,8 @@ class Item(scrapy.Item):
   publish_time = scrapy.Field(serilizer = str)
   content = scrapy.Field()
   author = scrapy.Field()
+  qrcode = scrapy.Field()
+
   query = scrapy.Field()
   source = scrapy.Field()
   #  read_count = scrapy.Field()

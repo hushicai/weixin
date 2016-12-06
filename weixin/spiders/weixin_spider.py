@@ -5,8 +5,8 @@ import re
 import scrapy
 from bs4 import BeautifulSoup
 from urllib import urlencode
-# relative import只能用在toplevel空间中
 from weixin.items import *
+from weixin.pipelines.adbapi import *
 from hashlib import md5
 
 class WeixinSpider(scrapy.Spider):
@@ -15,6 +15,11 @@ class WeixinSpider(scrapy.Spider):
   download_delay = 2
 
   query = 'JavaScript'
+
+  # 配置spider所需pipelines
+  pipelines = set([
+    WeixinArticlePipeline
+  ])
 
   def start_requests(self):
     start_urls = [
@@ -42,7 +47,7 @@ class WeixinSpider(scrapy.Spider):
 
       fd = md5()
       fd.update(weixin_id + ', ')
-      fd.update(title)
+      fd.update(title.encode('utf8'))
       uid = fd.hexdigest()
 
       meta = {
@@ -79,9 +84,14 @@ class WeixinSpider(scrapy.Spider):
     article_item['title'] = meta['article_title']
     article_item['uid'] = meta['article_uid']
     article_item['abstract'] = meta['article_abstract']
+
     article_item['author'] = response.xpath('//*[@id="img-content"]/div[1]/em[2]/text()').extract_first()
     article_item['content'] = "".join(response.xpath('//*[@id="js_content"]/node()').extract()).strip()
     article_item['publish_time'] = response.xpath('//*[@id="img-content"]/div[1]/em[1]/text()').extract_first()
+
+    # 提取qrcode
+    article_item['qrcode'] = response.xpath('//script').re('window\.sg_qr_code\s*=\s*"([^"]*)"')
+
     article_item['query'] = self.query
     article_item['source'] = self.name
 

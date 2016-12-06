@@ -4,8 +4,9 @@ import MySQLdb.cursors
 import logging
 import time
 from twisted.enterprise import adbapi
+from weixin.utilities.decorators import check_spider_pipeline
 
-class MySQLStorePipeline(object):
+class WeixinArticlePipeline(object):
 
   def open_spider(self, spider):
     db_args = dict(
@@ -23,8 +24,10 @@ class MySQLStorePipeline(object):
   def close_spider(self, spider):
     self.dbpool.close()
 
+  @check_spider_pipeline
   def process_item(self, item, spider):
     deferred = self.dbpool.runInteraction(self._do_interaction, item, spider)
+    deferred.addCallback(self._handle_qr_code)
     deferred.addErrback(self._handle_error, item, spider)
     deferred.addBoth(lambda _: item)
     return deferred
@@ -62,7 +65,7 @@ class MySQLStorePipeline(object):
         source,
         insert_time
       )
-      values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
+      values(%s,%d,%s,%s,%s,%s,%s,%s,%s,%s)"""
       transaction.execute(
         sql,
         (
@@ -80,7 +83,7 @@ class MySQLStorePipeline(object):
       )
     else:
       # 更新文章
-      logging.info('update article: %s', (item['title'],))
+      logging.info('update article: %s', (item['title']))
       sql = """update db_weixin.tb_weixin_article
       set abstract = %s,content = %s, author= %s, update_time = %s
       where uid = %s
@@ -110,6 +113,7 @@ class MySQLStorePipeline(object):
     sql = """insert into db_weixin.tb_weixin_account(weixin_id,weixin_name,insert_time)
     values(%s,%s,%s)
     """
+    logging.info('insert account: %s', item['weixin_name'])
     nowTime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
     transaction.execute(
       sql,
@@ -117,6 +121,10 @@ class MySQLStorePipeline(object):
     )
     account_id = transaction.connection.insert_id()
     return account_id
+
+  def _handle_qr_code(self, item):
+    """处理二维码
+    """
 
   def _handle_error(self, failure, item, spider):
     logging.info('adbapi runInteraction fail: %s', failure)
