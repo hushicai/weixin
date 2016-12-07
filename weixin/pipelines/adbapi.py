@@ -5,6 +5,7 @@ import logging
 import time
 from twisted.enterprise import adbapi
 from weixin.utilities.decorators import check_spider_pipeline
+from weixin.utilities.qiniu_cloud import Qiniu
 
 class WeixinArticlePipeline(object):
 
@@ -27,9 +28,9 @@ class WeixinArticlePipeline(object):
   @check_spider_pipeline
   def process_item(self, item, spider):
     deferred = self.dbpool.runInteraction(self._do_interaction, item, spider)
-    deferred.addCallback(self._handle_qr_code)
+    deferred.addCallback(self._handle_success)
     deferred.addErrback(self._handle_error, item, spider)
-    deferred.addBoth(lambda _: item)
+    #  deferred.addBoth(lambda _: item)
     return deferred
 
   def _do_interaction(self, transaction, item, spider):
@@ -40,6 +41,8 @@ class WeixinArticlePipeline(object):
 
     item['account_id'] = account_id
     self._insert_or_update_article(transaction, item)
+
+    return item
 
   def _insert_or_update_article(self, transaction, item):
     """插入或者更新文章"""
@@ -65,7 +68,7 @@ class WeixinArticlePipeline(object):
         source,
         insert_time
       )
-      values(%s,%d,%s,%s,%s,%s,%s,%s,%s,%s)"""
+      values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
       transaction.execute(
         sql,
         (
@@ -111,7 +114,7 @@ class WeixinArticlePipeline(object):
   def _insert_account(self, transaction, item):
     """插入新的微信账号"""
     sql = """insert into db_weixin.tb_weixin_account(weixin_id,weixin_name,insert_time)
-    values(%s,%s,%s)
+    values(%s,%s,%s);
     """
     logging.info('insert account: %s', item['weixin_name'])
     nowTime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
@@ -122,9 +125,33 @@ class WeixinArticlePipeline(object):
     account_id = transaction.connection.insert_id()
     return account_id
 
-  def _handle_qr_code(self, item):
-    """处理二维码
-    """
+  def _update_qrcode(self, item):
+    logging.info('update qrcode: %s %s', (item['title'],item['qrcode']))
+    nowTime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+    sql = """
+    update db_weixin.tb_weixin_account set qrcode = '%s', update_time = '%s'
+    where weixin_id = %s
+    """ % (item['qrcode'], nowTime, item['weixin_id'])
+    d = self.dbpool.runQuery(sql)
+    d.addCallback(lambda _: item)
+
+    return d
+
+  def _handle_success(self, item):
+    logging.info('adbapi runInteraction success: %s', item['title'])
+
+    # 处理二维码
+    q = Qiniu()
+
+    url = q.upload(item['qrcode'], item['weixin_id'] + '.jpg')
+
+    if url:
+      # 更新数据库
+      item['qrcode'] = url
+      self._update_qrcode(item)
+
+    return item
 
   def _handle_error(self, failure, item, spider):
     logging.info('adbapi runInteraction fail: %s', failure)
+    return item

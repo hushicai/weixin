@@ -90,7 +90,8 @@ class WeixinSpider(scrapy.Spider):
     article_item['publish_time'] = response.xpath('//*[@id="img-content"]/div[1]/em[1]/text()').extract_first()
 
     # 提取qrcode
-    article_item['qrcode'] = response.xpath('//script').re('window\.sg_qr_code\s*=\s*"([^"]*)"')
+    qrcode = response.xpath('//script').re_first('window\.sg_qr_code\s*=\s*"([^"]*)"')
+    article_item['qrcode'] = 'http://mp.weixin.qq.com' + qrcode
 
     article_item['query'] = self.query
     article_item['source'] = self.name
